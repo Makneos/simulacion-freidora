@@ -533,7 +533,7 @@ const FryerSimulation = () => {
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="text-sm text-slate-600 mb-1">Merma Producto</div>
             <div className="text-2xl font-bold text-orange-600">
-              {totals.productLoss.toFixed(0)} uds
+              {totals.productLoss.toFixed(0)} unidades
             </div>
           </div>
           <div className="bg-white rounded-lg shadow-lg p-6">
@@ -545,7 +545,7 @@ const FryerSimulation = () => {
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="text-sm text-slate-600 mb-1">Costos Pérdidas</div>
             <div className="text-2xl font-bold text-red-600">
-              ${(totals.costs / 1000).toFixed(0)}K
+              ${(totals.costs / 1000).toFixed(0)} m
             </div>
           </div>
         </div>
