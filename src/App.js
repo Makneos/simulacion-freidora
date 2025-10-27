@@ -549,7 +549,7 @@ const FryerSimulation = () => {
             {/* Explicación del Análisis */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
               <h2 className="text-2xl font-bold text-slate-800 mb-4">
-                📊 Análisis de Resultados - Simulación de 30 Días
+                Análisis de Resultados - Simulación de 30 Días
               </h2>
               <div className="prose max-w-none text-slate-700 space-y-3">
                 <p className="text-lg leading-relaxed">
@@ -565,7 +565,7 @@ const FryerSimulation = () => {
                 
                 <div className="grid md:grid-cols-2 gap-4 mt-4">
                   <div className="bg-white rounded-lg p-4 shadow">
-                    <h3 className="font-semibold text-slate-800 mb-2">🔥 Control de Temperatura</h3>
+                    <h3 className="font-semibold text-slate-800 mb-2">Control de Temperatura</h3>
                     <p className="text-sm">
                       {systemType === 'actual' 
                         ? 'El sistema actual presenta variaciones de ±15°C, lo que genera cocción irregular y mayor degradación del aceite.'
@@ -575,7 +575,7 @@ const FryerSimulation = () => {
                   </div>
                   
                   <div className="bg-white rounded-lg p-4 shadow">
-                    <h3 className="font-semibold text-slate-800 mb-2">💧 Pérdidas de Aceite</h3>
+                    <h3 className="font-semibold text-slate-800 mb-2">Pérdidas de Aceite</h3>
                     <p className="text-sm">
                       {systemType === 'actual'
                         ? 'Sin sistema de filtrado, el aceite se contamina rápidamente con residuos, obligando a reemplazarlo con mayor frecuencia (30% de pérdida).'
@@ -585,7 +585,7 @@ const FryerSimulation = () => {
                   </div>
                   
                   <div className="bg-white rounded-lg p-4 shadow">
-                    <h3 className="font-semibold text-slate-800 mb-2">📦 Merma de Producto</h3>
+                    <h3 className="font-semibold text-slate-800 mb-2">Merma de Producto</h3>
                     <p className="text-sm">
                       Las mermas alcanzaron {totals.productLoss.toFixed(0)} unidades. {systemType === 'actual'
                         ? 'La variabilidad térmica causa sobrecocción y reventones, especialmente en empanaditas de queso.'
@@ -595,7 +595,7 @@ const FryerSimulation = () => {
                   </div>
                   
                   <div className="bg-white rounded-lg p-4 shadow">
-                    <h3 className="font-semibold text-slate-800 mb-2">💰 Impacto Económico</h3>
+                    <h3 className="font-semibold text-slate-800 mb-2">Impacto Económico</h3>
                     <p className="text-sm">
                       Las pérdidas totales ascendieron a <strong>${totals.costs.toLocaleString()} CLP</strong>. 
                       {systemType === 'nuevo' && ' Esto representa un ahorro de ' + (1127231 - totals.costs).toLocaleString() + ' CLP mensuales vs el sistema actual.'}
@@ -605,7 +605,7 @@ const FryerSimulation = () => {
 
                 <div className="mt-6 p-4 bg-blue-100 border-l-4 border-blue-500 rounded">
                   <p className="font-semibold text-blue-900">
-                    ✅ Conclusión: {systemType === 'actual' 
+                    Conclusión: {systemType === 'actual' 
                       ? 'El sistema actual presenta ineficiencias significativas que impactan en costos operativos y calidad del producto.'
                       : 'El sistema Western Kitchen 40L reduce las pérdidas en un 50%, mejora la calidad del producto y ofrece un payback de 4.4 meses.'
                     }
