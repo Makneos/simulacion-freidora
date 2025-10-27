@@ -17,15 +17,50 @@ const FryerSimulation = () => {
     costs: 0
   });
 
-  // Nuevo: seguimiento de productos evaluados en el día
   const [evaluatedProducts, setEvaluatedProducts] = useState([]);
 
-  // Configuración de productos (editable)
+  // Configuración de productos con frecuencias reales
   const [products, setProducts] = useState([
-    { name: 'Empanaditas', time: 180, temp: 180, units: 5000, batchesPerDay: 3 },
-    { name: 'Sopaipillas', time: 120, temp: 175, units: 3000, batchesPerDay: 2 },
-    { name: 'Camarones', time: 240, temp: 185, units: 2000, batchesPerDay: 2 },
-    { name: 'Bolitas de Carne', time: 200, temp: 182, units: 1500, batchesPerDay: 2 }
+    { 
+      name: 'Sopaipillas', 
+      time: 120, 
+      temp: 175, 
+      units: 16100, 
+      batchesPerDay: 1,
+      frequency: 'variable',
+      daysPerWeek: 2.5,
+      active: true
+    },
+    { 
+      name: 'Empanaditas', 
+      time: 180, 
+      temp: 180, 
+      units: 7500,
+      batchesPerDay: 1,
+      frequency: 'weekly',
+      daysPerWeek: 3,
+      active: true
+    },
+    { 
+      name: 'Camarones Apanados', 
+      time: 240, 
+      temp: 185, 
+      units: 100,
+      batchesPerDay: 1,
+      frequency: 'biweekly',
+      daysPerMonth: 2,
+      active: false
+    },
+    { 
+      name: 'Bolitas de Carne', 
+      time: 200, 
+      temp: 182, 
+      units: 1250,
+      batchesPerDay: 1,
+      frequency: 'monthly',
+      daysPerMonth: 1,
+      active: false
+    }
   ]);
 
   const updateProduct = (index, field, value) => {
@@ -58,14 +93,51 @@ const FryerSimulation = () => {
 
   const currentSystem = systems[systemType];
 
+  // Determinar qué productos se producen en un día específico
+  const getProductsForDay = (dayNumber) => {
+    const productsToday = [];
+    
+    products.forEach(product => {
+      let shouldProduce = false;
+      
+      switch(product.frequency) {
+        case 'variable':
+          const weekDay = dayNumber % 7;
+          shouldProduce = [1, 3, 5].includes(weekDay) || (Math.random() < 0.3 && [2, 4].includes(weekDay));
+          break;
+          
+        case 'weekly':
+          const weekDay2 = dayNumber % 7;
+          shouldProduce = [2, 4, 6].includes(weekDay2);
+          break;
+          
+        case 'biweekly':
+          shouldProduce = dayNumber % 14 === 0;
+          break;
+          
+        case 'monthly':
+          shouldProduce = dayNumber === 15;
+          break;
+          
+        default:
+          shouldProduce = true;
+      }
+      
+      if (shouldProduce) {
+        productsToday.push(product);
+      }
+    });
+    
+    return productsToday;
+  };
+
   // Simular un lote de producción
   const simulateBatch = (product, system) => {
     const tempActual = product.temp + (Math.random() - 0.5) * 2 * system.tempVariation;
     const tempInRange = Math.abs(tempActual - product.temp) < 5;
     
-    // Aceite usado por lote (no acumulativo, cada lote usa el aceite disponible)
-    const oilUsedPerBatch = system.capacity; // La capacidad total de la freidora
-    const oilLostPerBatch = oilUsedPerBatch * (system.oilLossRate / 30); // Pérdida diaria distribuida
+    const oilUsedPerBatch = system.capacity;
+    const oilLostPerBatch = oilUsedPerBatch * (system.oilLossRate / 30);
     const productLossPerBatch = (product.units / product.batchesPerDay) * system.productLossRate * (tempInRange ? 1 : 1.5);
     
     return {
@@ -97,30 +169,27 @@ const FryerSimulation = () => {
       totalBatches: 0
     };
 
-    // Nuevo: conjunto para trackear productos evaluados en este día
     const evaluatedSet = new Set();
+    const todaysProducts = getProductsForDay(currentDay + 1);
 
-    // La máquina se llena una vez al día con su capacidad total
-    const dailyOilCapacity = currentSystem.capacity;
-    dayData.oilUsed = dailyOilCapacity;
+    if (todaysProducts.length > 0) {
+      const dailyOilCapacity = currentSystem.capacity;
+      dayData.oilUsed = dailyOilCapacity;
 
-    products.forEach(product => {
-      const batchesPerDay = product.batchesPerDay;
-      dayData.totalBatches += batchesPerDay;
-      
-      for (let i = 0; i < batchesPerDay; i++) {
-        const batch = simulateBatch(product, currentSystem);
-        dayData.batches.push(batch);
-        // No sumamos oilUsed porque todos los lotes usan el mismo aceite del día
-        dayData.oilLost += batch.oilLost;
-        dayData.productLoss += batch.productLoss;
+      todaysProducts.forEach(product => {
+        const batchesPerDay = product.batchesPerDay;
+        dayData.totalBatches += batchesPerDay;
+        
+        for (let i = 0; i < batchesPerDay; i++) {
+          const batch = simulateBatch(product, currentSystem);
+          dayData.batches.push(batch);
+          dayData.oilLost += batch.oilLost;
+          dayData.productLoss += batch.productLoss;
+          evaluatedSet.add(product.name);
+        }
+      });
+    }
 
-        // Marcar este producto como evaluado (al menos un lote procesado)
-        evaluatedSet.add(product.name);
-      }
-    });
-
-    // Calcular ingresos y costos
     const revenuePerDay = 21466428 / 30;
     dayData.revenue = revenuePerDay;
     dayData.costs = (dayData.oilLost * 1750) + (dayData.productLoss * 100);
@@ -136,7 +205,6 @@ const FryerSimulation = () => {
       costs: prev.costs + dayData.costs
     }));
 
-    // Actualizar lista de productos evaluados en la UI
     setEvaluatedProducts(Array.from(evaluatedSet));
 
     if (dayData.batches.length > 0) {
@@ -145,10 +213,11 @@ const FryerSimulation = () => {
         batchNumber: dayData.batches.length,
         totalBatches: dayData.totalBatches
       });
+    } else {
+      setCurrentBatch(null);
     }
   };
 
-  // Control de simulación
   useEffect(() => {
     let interval;
     if (isRunning && currentDay < 30) {
@@ -166,7 +235,7 @@ const FryerSimulation = () => {
     setCurrentDay(0);
     setProductionData([]);
     setCurrentBatch(null);
-    setEvaluatedProducts([]); // resetear productos evaluados
+    setEvaluatedProducts([]);
     setTotals({
       oilUsed: 0,
       oilLost: 0,
@@ -176,10 +245,8 @@ const FryerSimulation = () => {
     });
   };
 
-  // Colores
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
-  // Datos comparativos
   const comparisonData = [
     {
       metric: 'Pérdida de Aceite',
@@ -207,85 +274,6 @@ const FryerSimulation = () => {
     }
   ];
 
-  // Helpers para procesamiento secuencial de lotes
-  const isRunningRef = useRef(isRunning);
-  useEffect(() => { isRunningRef.current = isRunning; }, [isRunning]);
-
-  const currentDayRef = useRef(currentDay);
-  useEffect(() => { currentDayRef.current = currentDay; }, [currentDay]);
-
-  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-  // Procesa un día completo pero actualiza currentBatch por cada lote (con pequeña pausa)
-  const processDay = async () => {
-    if (currentDayRef.current >= 30) return;
-
-    let dayData = {
-      day: currentDayRef.current + 1,
-      oilUsed: 0,
-      oilLost: 0,
-      productLoss: 0,
-      revenue: 0,
-      costs: 0,
-      batches: [],
-      totalBatches: 0
-    };
-
-    const evaluatedSet = new Set();
-    const dailyOilCapacity = currentSystem.capacity;
-    dayData.oilUsed = dailyOilCapacity;
-
-    // Preconstruir todos los lotes del día
-    const dayBatches = [];
-    products.forEach(product => {
-      const batchesPerDay = product.batchesPerDay;
-      dayData.totalBatches += batchesPerDay;
-      for (let i = 0; i < batchesPerDay; i++) {
-        dayBatches.push(simulateBatch(product, currentSystem));
-        evaluatedSet.add(product.name);
-      }
-    });
-
-    // Procesar lotes uno a uno y actualizar currentBatch para que la UI muestre el lote en proceso
-    for (let i = 0; i < dayBatches.length; i++) {
-      const batch = dayBatches[i];
-      dayData.batches.push(batch);
-      dayData.oilLost += batch.oilLost;
-      dayData.productLoss += batch.productLoss;
-
-      setCurrentBatch({
-        ...batch,
-        batchNumber: i + 1,
-        totalBatches: dayData.totalBatches
-      });
-
-      // pequeña pausa para que la UI renderice el lote actual (ajusta ms a tu gusto)
-      await sleep(200);
-    }
-
-    // Calcular ingresos y costos
-    const revenuePerDay = 21466428 / 30;
-    dayData.revenue = revenuePerDay;
-    dayData.costs = (dayData.oilLost * 1750) + (dayData.productLoss * 100);
-
-    // Guardar resultados del día
-    setProductionData(prev => [...prev, dayData]);
-    setCurrentDay(prev => prev + 1);
-
-    setTotals(prev => ({
-      oilUsed: prev.oilUsed + dayData.oilUsed,
-      oilLost: prev.oilLost + dayData.oilLost,
-      productLoss: prev.productLoss + dayData.productLoss,
-      revenue: prev.revenue + dayData.revenue,
-      costs: prev.costs + dayData.costs
-    }));
-
-    setEvaluatedProducts(Array.from(evaluatedSet));
-
-    // dejar currentBatch en el último lote del día por unos instantes (o null si quieres ocultarlo)
-    await sleep(250);
-  };
-
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -310,7 +298,7 @@ const FryerSimulation = () => {
                     ? 'bg-red-500 hover:bg-red-600 text-white'
                     : 'bg-blue-500 hover:bg-blue-600 text-white'
                 }`}
-                disabled={currentDay >= 26}
+                disabled={currentDay >= 30}
               >
                 {isRunning ? <Pause size={20} /> : <Play size={20} />}
                 {isRunning ? 'Pausar' : 'Iniciar'}
@@ -361,34 +349,46 @@ const FryerSimulation = () => {
                 {((currentDay / 30) * 100).toFixed(0)}% completado
               </div>
 
-              {/* Nuevo: Mostrar qué productos fueron evaluados en el día */}
               <div className="mt-2 text-xs text-slate-500">
-                <div className="font-medium text-slate-700">Productos evaluados hoy:</div>
+                <div className="font-medium text-slate-700">Productos en producción hoy:</div>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {products.map(p => {
                     const evaluated = evaluatedProducts.includes(p.name);
+                    const todaysProducts = getProductsForDay(currentDay);
+                    const scheduledToday = todaysProducts.some(tp => tp.name === p.name);
+                    
                     return (
                       <span
                         key={p.name}
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${evaluated ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-500'}`}
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          evaluated 
+                            ? 'bg-green-100 text-green-800' 
+                            : scheduledToday 
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-slate-100 text-slate-400'
+                        }`}
                       >
-                        {p.name}{evaluated ? ' ✓' : ''}
+                        {p.name}
+                        {evaluated ? ' ✓' : scheduledToday ? ' ⏳' : ''}
                       </span>
                     );
                   })}
                 </div>
                 <div className="mt-1">
-                  {evaluatedProducts.length === products.length ? (
-                    <span className="text-green-600 font-medium text-sm">Todos evaluados</span>
+                  {evaluatedProducts.length > 0 ? (
+                    <span className="text-green-600 font-medium text-sm">
+                      {evaluatedProducts.length} producto{evaluatedProducts.length !== 1 ? 's' : ''} procesado{evaluatedProducts.length !== 1 ? 's' : ''} hoy
+                    </span>
+                  ) : currentDay > 0 ? (
+                    <span className="text-slate-500 text-sm">Sin producción hoy</span>
                   ) : (
-                    <span className="text-slate-500 text-sm">{evaluatedProducts.length} de {products.length} evaluados</span>
+                    <span className="text-slate-400 text-sm">Esperando inicio...</span>
                   )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Botón de Configuración */}
           <button
             onClick={() => setShowConfig(!showConfig)}
             className="w-full mt-4 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-black rounded-lg font-medium transition"
@@ -397,7 +397,7 @@ const FryerSimulation = () => {
           </button>
         </div>
 
-        {/* Panel de Configuración de Productos */}
+        {/* Panel de Configuración */}
         {showConfig && (
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-bold text-slate-800 mb-4">
@@ -408,9 +408,10 @@ const FryerSimulation = () => {
                 <thead>
                   <tr className="border-b-2 border-slate-200">
                     <th className="text-left p-2">Producto</th>
+                    <th className="text-left p-2">Frecuencia</th>
                     <th className="text-left p-2">Tiempo (s)</th>
                     <th className="text-left p-2">Temp. (°C)</th>
-                    <th className="text-left p-2">Unidades/Lote</th>
+                    <th className="text-left p-2">Unidades/Batch</th>
                     <th className="text-left p-2">Lotes/Día</th>
                   </tr>
                 </thead>
@@ -418,6 +419,12 @@ const FryerSimulation = () => {
                   {products.map((product, idx) => (
                     <tr key={idx} className="border-b border-slate-100">
                       <td className="p-2 font-medium">{product.name}</td>
+                      <td className="p-2 text-xs text-slate-600">
+                        {product.frequency === 'variable' && '1-4x/semana'}
+                        {product.frequency === 'weekly' && '3x/semana'}
+                        {product.frequency === 'biweekly' && 'Cada 2 semanas'}
+                        {product.frequency === 'monthly' && '1x/mes'}
+                      </td>
                       <td className="p-2">
                         <input
                           type="number"
@@ -543,10 +550,9 @@ const FryerSimulation = () => {
           </div>
         </div>
 
-        {/* Gráficos - Solo mostrar al finalizar */}
+        {/* Gráficos y Análisis */}
         {currentDay === 30 && (
           <div className="space-y-6">
-            {/* Explicación del Análisis */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
               <h2 className="text-2xl font-bold text-slate-800 mb-4">
                 Análisis de Resultados - Simulación de 30 Días
@@ -598,7 +604,7 @@ const FryerSimulation = () => {
                     <h3 className="font-semibold text-slate-800 mb-2">Impacto Económico</h3>
                     <p className="text-sm">
                       Las pérdidas totales ascendieron a <strong>${totals.costs.toLocaleString()} CLP</strong>. 
-                      {systemType === 'nuevo' && ' Esto representa un ahorro de ' + (1127231 - totals.costs).toLocaleString() + ' CLP mensuales vs el sistema actual.'}
+                      {systemType === 'nuevo' && ' Esto representa un ahorro significativo mensual vs el sistema actual.'}
                     </p>
                   </div>
                 </div>
@@ -607,14 +613,13 @@ const FryerSimulation = () => {
                   <p className="font-semibold text-blue-900">
                     Conclusión: {systemType === 'actual' 
                       ? 'El sistema actual presenta ineficiencias significativas que impactan en costos operativos y calidad del producto.'
-                      : 'El sistema Western Kitchen 40L reduce las pérdidas en un 50%, mejora la calidad del producto y ofrece un payback de 4.4 meses.'
+                      : 'El sistema Western Kitchen 40L reduce las pérdidas considerablemente, mejora la calidad del producto y ofrece un retorno de inversión atractivo.'
                     }
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Gráfico Principal */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h3 className="text-xl font-bold text-slate-800 mb-4">
                 Evolución de Costos por Pérdidas (30 Días)
