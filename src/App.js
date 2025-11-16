@@ -14,7 +14,12 @@ const FryerSimulation = () => {
     oilLost: 0,
     productLoss: 0,
     revenue: 0,
-    costs: 0
+    costs: 0,
+    totalUnitsProduced: 0,
+    totalKgProduced: 0,
+    tempDeviations: [],
+    timeInRange: 0,
+    totalTime: 0
   });
 
   const [evaluatedProducts, setEvaluatedProducts] = useState([]);
@@ -139,18 +144,22 @@ const FryerSimulation = () => {
     const oilUsedPerBatch = system.capacity;
     const oilLostPerBatch = oilUsedPerBatch * (system.oilLossRate / 30);
     const productLossPerBatch = (product.units / product.batchesPerDay) * system.productLossRate * (tempInRange ? 1 : 1.5);
+    const kgProduced = (product.units / product.batchesPerDay) * 0.05;
+    const tempDeviation = Math.abs(tempActual - product.temp);
     
     return {
       product: product.name,
       temperature: tempActual,
       targetTemp: product.temp,
       tempInRange,
+      tempDeviation,
       oilUsed: oilUsedPerBatch,
       oilLost: oilLostPerBatch,
       productLoss: productLossPerBatch,
       efficiency: system.efficiency,
       time: product.time,
-      units: product.units / product.batchesPerDay
+      units: product.units / product.batchesPerDay,
+      kgProduced
     };
   };
 
@@ -166,7 +175,12 @@ const FryerSimulation = () => {
       revenue: 0,
       costs: 0,
       batches: [],
-      totalBatches: 0
+      totalBatches: 0,
+      unitsProduced: 0,
+      kgProduced: 0,
+      tempDeviations: [],
+      timeInRange: 0,
+      totalTime: 0
     };
 
     const evaluatedSet = new Set();
@@ -185,9 +199,14 @@ const FryerSimulation = () => {
           dayData.batches.push(batch);
           dayData.oilLost += batch.oilLost;
           dayData.productLoss += batch.productLoss;
+          dayData.unitsProduced += batch.units;
+          dayData.kgProduced += batch.kgProduced;
+          dayData.tempDeviations.push(batch.tempDeviation);
+          dayData.totalTime += batch.time;
+          dayData.timeInRange += batch.tempInRange ? batch.time : 0;
           evaluatedSet.add(product.name);
-        }
-      });
+  }
+});
     }
 
     const revenuePerDay = 21466428 / 30;
@@ -202,7 +221,12 @@ const FryerSimulation = () => {
       oilLost: prev.oilLost + dayData.oilLost,
       productLoss: prev.productLoss + dayData.productLoss,
       revenue: prev.revenue + dayData.revenue,
-      costs: prev.costs + dayData.costs
+      costs: prev.costs + dayData.costs,
+      totalUnitsProduced: prev.totalUnitsProduced + dayData.unitsProduced,
+      totalKgProduced: prev.totalKgProduced + dayData.kgProduced,
+      tempDeviations: [...prev.tempDeviations, ...dayData.tempDeviations],
+      timeInRange: prev.timeInRange + dayData.timeInRange,
+      totalTime: prev.totalTime + dayData.totalTime
     }));
 
     setEvaluatedProducts(Array.from(evaluatedSet));
@@ -241,7 +265,12 @@ const FryerSimulation = () => {
       oilLost: 0,
       productLoss: 0,
       revenue: 0,
-      costs: 0
+      costs: 0,
+      totalUnitsProduced: 0,
+      totalKgProduced: 0,
+      tempDeviations: [],
+      timeInRange: 0,
+      totalTime: 0
     });
   };
 
@@ -549,7 +578,236 @@ const FryerSimulation = () => {
             </div>
           </div>
         </div>
+{/* Métricas Esenciales de Performance */}
+{currentDay > 0 && (
+  <div className="bg-white rounded-lg shadow-lg p-6">
+    <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+      <Activity className="text-blue-500" />
+      Métricas Esenciales de Performance
+    </h2>
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* 1. Accuracy Térmica */}
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-5 border-2 border-blue-200">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-700">Accuracy Térmica</h3>
+          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+            currentSystem.tempVariation <= 2 ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'
+          }`}>
+            {currentSystem.tempVariation <= 2 ? 'EXCELENTE' : 'MEJORAR'}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-blue-600">
+              ±{totals.tempDeviations.length > 0 
+                ? (totals.tempDeviations.reduce((a, b) => a + b, 0) / totals.tempDeviations.length).toFixed(1)
+                : '0.0'
+              }°C
+            </span>
+            <span className="text-sm text-slate-600">desviación</span>
+          </div>
+          <div className="text-xs text-slate-600 bg-white rounded p-2">
+            <strong>Fórmula:</strong> Promedio de |T_real - T_set|
+          </div>
+          <div className="text-xs text-slate-600">
+            <strong>Target Nuevo:</strong> ±2°C<br/>
+            <strong>Target Actual:</strong> ±15°C
+          </div>
+        </div>
+      </div>
 
+      {/* 2. Estabilidad Térmica */}
+      <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-5 border-2 border-green-200">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-700">Estabilidad Térmica</h3>
+          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+            (totals.timeInRange / totals.totalTime * 100) >= 90 ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'
+          }`}>
+            {(totals.timeInRange / totals.totalTime * 100) >= 90 ? 'ÓPTIMO' : 'CRÍTICO'}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-green-600">
+              {totals.totalTime > 0 ? (totals.timeInRange / totals.totalTime * 100).toFixed(1) : '0.0'}%
+            </span>
+            <span className="text-sm text-slate-600">en rango</span>
+          </div>
+          <div className="text-xs text-slate-600 bg-white rounded p-2">
+            <strong>Fórmula:</strong> (t_rango / t_total) × 100
+          </div>
+          <div className="text-xs text-slate-600">
+            <strong>Target Nuevo:</strong> 95-98%<br/>
+            <strong>Target Actual:</strong> 60-70%
+          </div>
+          <div className="mt-2 bg-white rounded-full h-3 overflow-hidden">
+            <div 
+              className="bg-green-500 h-full transition-all duration-500"
+              style={{ width: `${totals.totalTime > 0 ? (totals.timeInRange / totals.totalTime * 100) : 0}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Consumo Específico de Aceite */}
+      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-5 border-2 border-purple-200">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-700">Consumo Específico</h3>
+          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+            totals.totalKgProduced > 0 && (totals.oilUsed / totals.totalKgProduced) < 0.8 
+              ? 'bg-green-500 text-white' 
+              : 'bg-orange-500 text-white'
+          }`}>
+            {totals.totalKgProduced > 0 && (totals.oilUsed / totals.totalKgProduced) < 0.8 ? 'EFICIENTE' : 'ALTO'}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-purple-600">
+              {totals.totalKgProduced > 0 
+                ? (totals.oilUsed / totals.totalKgProduced).toFixed(2)
+                : '0.00'
+              }
+            </span>
+            <span className="text-sm text-slate-600">L/kg</span>
+          </div>
+          <div className="text-xs text-slate-600 bg-white rounded p-2">
+            <strong>Fórmula:</strong> L_aceite / kg_producidos
+          </div>
+          <div className="text-xs text-slate-600">
+            <strong>Producción:</strong> {totals.totalKgProduced.toFixed(1)} kg<br/>
+            <strong>Impacto:</strong> Ahorro directo CLP
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Tasa de Pérdida de Aceite */}
+      <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-5 border-2 border-red-200">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-700">Tasa Pérdida Aceite</h3>
+          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+            (totals.oilLost / totals.oilUsed * 100) < 20 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}>
+            {(totals.oilLost / totals.oilUsed * 100) < 20 ? 'CONTROLADO' : 'ELEVADO'}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-red-600">
+              {totals.oilUsed > 0 ? ((totals.oilLost / totals.oilUsed) * 100).toFixed(1) : '0.0'}%
+            </span>
+            <span className="text-sm text-slate-600">perdido</span>
+          </div>
+          <div className="text-xs text-slate-600 bg-white rounded p-2">
+            <strong>Fórmula:</strong> (L_perdidos / L_totales) × 100
+          </div>
+          <div className="text-xs text-slate-600">
+            <strong>Actual:</strong> ~30%<br/>
+            <strong>Nuevo:</strong> ~15%<br/>
+            <strong>Costo:</strong> ${((totals.oilLost * 1750) / 1000).toFixed(1)}K
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Merma por Producto Global */}
+      <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-5 border-2 border-orange-200">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-700">Merma Global</h3>
+          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+            totals.totalUnitsProduced > 0 && (totals.productLoss / totals.totalUnitsProduced * 100) < 0.5 
+              ? 'bg-green-500 text-white' 
+              : 'bg-orange-500 text-white'
+          }`}>
+            {totals.totalUnitsProduced > 0 && (totals.productLoss / totals.totalUnitsProduced * 100) < 0.5 ? 'BAJO' : 'MODERADO'}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-orange-600">
+              {totals.totalUnitsProduced > 0 
+                ? ((totals.productLoss / totals.totalUnitsProduced) * 100).toFixed(2)
+                : '0.00'
+              }%
+            </span>
+            <span className="text-sm text-slate-600">perdidas</span>
+          </div>
+          <div className="text-xs text-slate-600 bg-white rounded p-2">
+            <strong>Fórmula:</strong> (u_perdidas / u_totales) × 100
+          </div>
+          <div className="text-xs text-slate-600">
+            <strong>Pérdida:</strong> {totals.productLoss.toFixed(0)} u<br/>
+            <strong>Producción:</strong> {totals.totalUnitsProduced.toFixed(0)} u<br/>
+            <strong>Costo:</strong> ${((totals.productLoss * 100) / 1000).toFixed(1)}K
+          </div>
+        </div>
+      </div>
+
+      {/* 6. KPIs Combinados */}
+      <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-5 border-2 border-indigo-200">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-700">Eficiencia General</h3>
+          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+            currentSystem.efficiency >= 0.80 ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'
+          }`}>
+            {currentSystem.efficiency >= 0.80 ? 'ALTA' : 'MEDIA'}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-indigo-600">
+              {(currentSystem.efficiency * 100).toFixed(0)}%
+            </span>
+            <span className="text-sm text-slate-600">eficiencia</span>
+          </div>
+          <div className="space-y-1 text-xs">
+            <div className="flex justify-between bg-white rounded px-2 py-1">
+              <span className="text-slate-600">Capacidad:</span>
+              <span className="font-bold text-indigo-600">{currentSystem.capacity}L</span>
+            </div>
+            <div className="flex justify-between bg-white rounded px-2 py-1">
+              <span className="text-slate-600">Filtrado:</span>
+              <span className={`font-bold ${currentSystem.filterSystem ? 'text-green-600' : 'text-red-600'}`}>
+                {currentSystem.filterSystem ? 'SÍ ✓' : 'NO ✗'}
+              </span>
+            </div>
+            <div className="flex justify-between bg-white rounded px-2 py-1">
+              <span className="text-slate-600">Variación T:</span>
+              <span className="font-bold text-orange-600">±{currentSystem.tempVariation}°C</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Resumen de Performance */}
+    <div className="mt-6 bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg p-4 text-black">
+      <h3 className="font-bold text-lg mb-3">📊 Resumen de Performance - Día {currentDay}</h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div>
+          <div className="text-slate-300 text-xs">Lotes Procesados</div>
+          <div className="text-2xl font-bold">{productionData.reduce((sum, d) => sum + d.totalBatches, 0)}</div>
+        </div>
+        <div>
+          <div className="text-slate-300 text-xs">Costo Total Pérdidas</div>
+          <div className="text-2xl font-bold">${(totals.costs / 1000).toFixed(1)}K</div>
+        </div>
+        <div>
+          <div className="text-slate-300 text-xs">Ahorro Potencial</div>
+          <div className="text-2xl font-bold text-green-400">
+            ${systemType === 'actual' ? '0' : ((1127231 - totals.costs) / 1000).toFixed(1)}K
+          </div>
+        </div>
+        <div>
+          <div className="text-slate-300 text-xs">ROI Proyectado</div>
+          <div className="text-2xl font-bold text-blue-400">
+            {systemType === 'nuevo' ? '4.4' : 'N/A'} meses
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
         {/* Gráficos y Análisis */}
         {currentDay === 30 && (
           <div className="space-y-6">
