@@ -801,7 +801,7 @@ const FryerSimulation = () => {
         <div>
           <div className="text-slate-300 text-xs">ROI Proyectado</div>
           <div className="text-2xl font-bold text-blue-400">
-            {systemType === 'nuevo' ? '4.4' : 'N/A'} meses
+            {systemType === 'nuevo' ? '6.8' : 'N/A'} meses
           </div>
         </div>
       </div>
@@ -975,7 +975,154 @@ const FryerSimulation = () => {
             ))}
           </div>
         </div>
+{/* Gráfico de Comparación de Costos */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h3 className="text-2xl font-bold text-slate-800 mb-6">
+            Comparación de Costos: Máquina Actual vs Nueva
+          </h3>
+          
+          {/* Gráfico de Barras Comparativo */}
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart
+              data={[
+                {
+                  concepto: 'Pérdida de Aceite',
+                  Actual: 955500,
+                  Nueva: 477750,
+                  diferencia: 477750
+                },
+                {
+                  concepto: 'Merma de Producto',
+                  Actual: 171731,
+                  Nueva: 85866,
+                  diferencia: 85865
+                },
+                {
+                  concepto: 'TOTAL MENSUAL',
+                  Actual: 1127231,
+                  Nueva: 563616,
+                  diferencia: 563615
+                }
+              ]}
+              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis 
+                dataKey="concepto" 
+                angle={-15}
+                textAnchor="end"
+                height={80}
+                stroke="#64748b"
+                style={{ fontSize: '12px' }}
+              />
+              <YAxis 
+                label={{ value: 'Costo Mensual (CLP)', angle: -90, position: 'insideLeft' }}
+                stroke="#64748b"
+                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+              />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
+                formatter={(value) => `$${value.toLocaleString()} CLP`}
+              />
+              <Legend 
+                wrapperStyle={{ paddingTop: '20px' }}
+                iconType="square"
+              />
+              <Bar dataKey="Actual" fill="#ef4444" name="Máquina Actual (ATFS-75)" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="Nueva" fill="#10b981" name="Máquina Nueva (Western Kitchen)" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
 
+          {/* Análisis de Ahorro */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-red-50 rounded-lg p-4 border-2 border-red-200">
+              <div className="text-sm font-semibold text-red-700 mb-2">Costo Máquina Actual</div>
+              <div className="text-3xl font-bold text-red-600">$1,127,231</div>
+              <div className="text-xs text-red-600 mt-1">CLP/mes en pérdidas</div>
+            </div>
+            
+            <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
+              <div className="text-sm font-semibold text-green-700 mb-2">Costo Máquina Nueva</div>
+              <div className="text-3xl font-bold text-green-600">$563,616</div>
+              <div className="text-xs text-green-600 mt-1">CLP/mes en pérdidas</div>
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+              <div className="text-sm font-semibold text-blue-700 mb-2 flex items-center gap-2">
+                <TrendingDown size={18} />
+                Ahorro Mensual
+              </div>
+              <div className="text-3xl font-bold text-blue-600">$563,615</div>
+              <div className="text-xs text-blue-600 mt-1">50% reducción de costos</div>
+            </div>
+          </div>
+
+          {/* Desglose Detallado */}
+          <div className="mt-6 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg p-5">
+            <h4 className="font-bold text-slate-800 mb-4">Desglose de Costos por Concepto</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="font-semibold text-slate-700 mb-3 text-sm">🛢️ Pérdida de Aceite</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Máquina Actual:</span>
+                    <span className="font-bold text-red-600">$955,500</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Máquina Nueva:</span>
+                    <span className="font-bold text-green-600">$477,750</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-slate-200">
+                    <span className="text-slate-700 font-medium">Ahorro:</span>
+                    <span className="font-bold text-blue-600">$477,750 (50%)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="font-semibold text-slate-700 mb-3 text-sm">📦 Merma de Producto</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Máquina Actual:</span>
+                    <span className="font-bold text-red-600">$171,731</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Máquina Nueva:</span>
+                    <span className="font-bold text-green-600">$85,866</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-slate-200">
+                    <span className="text-slate-700 font-medium">Ahorro:</span>
+                    <span className="font-bold text-blue-600">$85,865 (50%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ROI y Payback */}
+          <div className="mt-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg p-6 text-white">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <div className="text-sm opacity-90 mb-1">Inversión Inicial</div>
+                <div className="text-3xl font-bold">$3,845,490</div>
+                <div className="text-xs opacity-80 mt-1">Western Kitchen 40L</div>
+              </div>
+              <div>
+                <div className="text-sm opacity-90 mb-1">Período de Recuperación</div>
+                <div className="text-3xl font-bold">6.8 meses</div>
+                <div className="text-xs opacity-80 mt-1">Payback Period</div>
+              </div>
+              <div>
+                <div className="text-sm opacity-90 mb-1">Ahorro Anual Proyectado</div>
+                <div className="text-3xl font-bold">$6,763,380</div>
+                <div className="text-xs opacity-80 mt-1">12 meses × $563,615</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        
         {/* Análisis Económico */}
         {currentDay === 30 && (
           <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow-lg p-6 border-2 border-green-200">
@@ -999,9 +1146,9 @@ const FryerSimulation = () => {
               <div className="bg-white rounded-lg p-4 shadow">
                 <div className="text-sm text-slate-600 mb-2">ROI Mensual</div>
                 <div className="text-3xl font-bold text-blue-600">
-                  {((563615 / 2500000) * 100).toFixed(1)}%
+                  {((563615 / 3845490) * 100).toFixed(1)}%
                 </div>
-                <div className="text-xs text-slate-500 mt-1">Payback: 4.4 meses</div>
+                <div className="text-xs text-slate-500 mt-1">Payback: 6.8 meses</div>
               </div>
             </div>
           </div>
