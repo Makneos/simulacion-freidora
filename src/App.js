@@ -587,7 +587,7 @@ const FryerSimulation = () => {
     </h2>
     
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {/* 1. Accuracy Térmica */}
+      {/* 1. Precision Térmica */}
       <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-5 border-2 border-blue-200">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-slate-700">Accuracy Térmica</h3>
@@ -607,9 +607,6 @@ const FryerSimulation = () => {
             </span>
             <span className="text-sm text-slate-600">desviación</span>
           </div>
-          <div className="text-xs text-slate-600 bg-white rounded p-2">
-            <strong>Fórmula:</strong> Promedio de |T_real - T_set|
-          </div>
           <div className="text-xs text-slate-600">
             <strong>Target Nuevo:</strong> ±2°C<br/>
             <strong>Target Actual:</strong> ±15°C
@@ -617,70 +614,8 @@ const FryerSimulation = () => {
         </div>
       </div>
 
-      {/* 2. Estabilidad Térmica */}
-      <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-5 border-2 border-green-200">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-700">Estabilidad Térmica</h3>
-          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-            (totals.timeInRange / totals.totalTime * 100) >= 90 ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'
-          }`}>
-            {(totals.timeInRange / totals.totalTime * 100) >= 90 ? 'ÓPTIMO' : 'CRÍTICO'}
-          </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-green-600">
-              {totals.totalTime > 0 ? (totals.timeInRange / totals.totalTime * 100).toFixed(1) : '0.0'}%
-            </span>
-            <span className="text-sm text-slate-600">en rango</span>
-          </div>
-          <div className="text-xs text-slate-600 bg-white rounded p-2">
-            <strong>Fórmula:</strong> (t_rango / t_total) × 100
-          </div>
-          <div className="text-xs text-slate-600">
-            <strong>Target Nuevo:</strong> 95-98%<br/>
-            <strong>Target Actual:</strong> 60-70%
-          </div>
-          <div className="mt-2 bg-white rounded-full h-3 overflow-hidden">
-            <div 
-              className="bg-green-500 h-full transition-all duration-500"
-              style={{ width: `${totals.totalTime > 0 ? (totals.timeInRange / totals.totalTime * 100) : 0}%` }}
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* 3. Consumo Específico de Aceite */}
-      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-5 border-2 border-purple-200">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-700">Consumo Específico</h3>
-          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-            totals.totalKgProduced > 0 && (totals.oilUsed / totals.totalKgProduced) < 0.8 
-              ? 'bg-green-500 text-white' 
-              : 'bg-orange-500 text-white'
-          }`}>
-            {totals.totalKgProduced > 0 && (totals.oilUsed / totals.totalKgProduced) < 0.8 ? 'EFICIENTE' : 'ALTO'}
-          </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-purple-600">
-              {totals.totalKgProduced > 0 
-                ? (totals.oilUsed / totals.totalKgProduced).toFixed(2)
-                : '0.00'
-              }
-            </span>
-            <span className="text-sm text-slate-600">L/kg</span>
-          </div>
-          <div className="text-xs text-slate-600 bg-white rounded p-2">
-            <strong>Fórmula:</strong> L_aceite / kg_producidos
-          </div>
-          <div className="text-xs text-slate-600">
-            <strong>Producción:</strong> {totals.totalKgProduced.toFixed(1)} kg<br/>
-            <strong>Impacto:</strong> Ahorro directo CLP
-          </div>
-        </div>
-      </div>
+
 
       {/* 4. Tasa de Pérdida de Aceite */}
       <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-5 border-2 border-red-200">
@@ -699,9 +634,7 @@ const FryerSimulation = () => {
             </span>
             <span className="text-sm text-slate-600">perdido</span>
           </div>
-          <div className="text-xs text-slate-600 bg-white rounded p-2">
-            <strong>Fórmula:</strong> (L_perdidos / L_totales) × 100
-          </div>
+
           <div className="text-xs text-slate-600">
             <strong>Actual:</strong> ~30%<br/>
             <strong>Nuevo:</strong> ~15%<br/>
@@ -732,9 +665,7 @@ const FryerSimulation = () => {
             </span>
             <span className="text-sm text-slate-600">perdidas</span>
           </div>
-          <div className="text-xs text-slate-600 bg-white rounded p-2">
-            <strong>Fórmula:</strong> (u_perdidas / u_totales) × 100
-          </div>
+
           <div className="text-xs text-slate-600">
             <strong>Pérdida:</strong> {totals.productLoss.toFixed(0)} u<br/>
             <strong>Producción:</strong> {totals.totalUnitsProduced.toFixed(0)} u<br/>
@@ -782,7 +713,7 @@ const FryerSimulation = () => {
 
     {/* Resumen de Performance */}
     <div className="mt-6 bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg p-4 text-black">
-      <h3 className="font-bold text-lg mb-3">📊 Resumen de Performance - Día {currentDay}</h3>
+      <h3 className="font-bold text-lg mb-3">Resumen simulación - Día {currentDay}</h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
         <div>
           <div className="text-slate-300 text-xs">Lotes Procesados</div>
@@ -799,7 +730,7 @@ const FryerSimulation = () => {
           </div>
         </div>
         <div>
-          <div className="text-slate-300 text-xs">ROI Proyectado</div>
+          <div className="text-slate-300 text-xs">Payback</div>
           <div className="text-2xl font-bold text-blue-400">
             {systemType === 'nuevo' ? '6.8' : 'N/A'} meses
           </div>
